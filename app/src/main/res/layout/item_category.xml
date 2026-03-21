@@ -1,0 +1,42 @@
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+
+    android:layout_width="70dp"
+    android:layout_height="wrap_content"
+    android:layout_margin="6dp"
+    android:clickable="true"
+    android:focusable="true"
+
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="4dp">
+
+        <!-- IMAGE -->
+        <ImageView
+            android:id="@+id/catImg"
+            android:layout_width="match_parent"
+            android:layout_height="70dp"
+            android:scaleType="centerCrop"
+            android:contentDescription="category" />
+
+        <!-- CATEGORY NAME -->
+        <TextView
+            android:id="@+id/catName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Fruits"
+            android:textStyle="bold"
+            android:textSize="10sp"
+            android:gravity="center"
+            android:textColor="#1B5E20"
+            android:padding="4dp" />
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

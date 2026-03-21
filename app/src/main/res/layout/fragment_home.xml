@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="#FFFFFF">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <!-- HEADER -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="10dp"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:layout_width="45dp"
+                android:layout_height="45dp"
+                android:src="@drawable/basket"
+                android:layout_marginEnd="10dp"/>
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:id="@+id/tvName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Hello, User"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="#1B5E20"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Welcome to GroceryEase"
+                    android:textSize="14sp"
+                    android:textColor="#1B5E20"/>
+
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- SEARCH BAR -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:background="#F5F5F5"
+            android:padding="10dp"
+            android:orientation="horizontal"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical">
+
+            <EditText
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Search Grocery..."
+                android:textColor="#000"
+                android:textColorHint="#888"
+                android:background="@null"/>
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/search_24"/>
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/camera_24"
+                android:layout_marginStart="10dp"/>
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@drawable/mic_24"
+                android:layout_marginStart="10dp"/>
+        </LinearLayout>
+
+        <!-- BANNER -->
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/bannerViewPager"
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:layout_marginTop="15dp"/>
+
+        <!-- CATEGORY TITLE -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Categories"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:textColor="#1B5E20"
+            android:layout_marginTop="15dp"/>
+
+        <!-- CATEGORY GRID (2 ROWS, 5 ITEMS EACH) -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/categoryRecycler"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false"
+            android:layout_marginTop="10dp"/>
+
+        <!-- PRODUCTS TITLE -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Products"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:textColor="#1B5E20"
+            android:layout_marginTop="15dp"/>
+
+        <!-- PRODUCTS LIST (VERTICAL SCROLL) -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/productRecycler"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false"
+            android:layout_marginTop="10dp"/>
+
+    </LinearLayout>
+
+</androidx.core.widget.NestedScrollView>
