@@ -6,12 +6,6 @@
     android:layout_height="wrap_content"
     android:layout_margin="6dp">
 
-    <!-- Background Image -->
-    <ImageView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="centerCrop"
-        android:src="@drawable/backgroundimg"/>
 
     <!-- CardView (UPPER LAYER) -->
     <androidx.cardview.widget.CardView
