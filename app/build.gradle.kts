@@ -70,4 +70,5 @@ dependencies {
     implementation("de.hdodenhof:circleimageview:3.1.0")
 
     testImplementation("junit:junit:4.13.2")
+    implementation("com.google.android.gms:play-services-location:21.0.1")
 }

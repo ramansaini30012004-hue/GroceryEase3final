@@ -7,7 +7,8 @@ data class Shop(
     var image: String = "",
     var address: String = "",
     var distanceText: String = "",
-    var location: Location = Location()
+    var latitude: Double = 0.0,
+    var longitude: Double = 0.0
 )
 data class Location(
     var lat: Double = 0.0,

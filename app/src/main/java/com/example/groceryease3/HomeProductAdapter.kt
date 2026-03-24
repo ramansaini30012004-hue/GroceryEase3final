@@ -1,6 +1,7 @@
 package com.example.groceryease3
 
 import android.content.Context
+import android.content.Intent
 import android.util.Base64
 import android.util.Log
 import android.view.LayoutInflater
@@ -44,6 +45,18 @@ class HomeProductAdapter(
 
         // 3. Load Shop Image (Base64)
 //        loadBase64WithGlide(item.shopImage, holder.shopImg)
+
+        holder.itemView.setOnClickListener {
+            val intent = Intent(context, ProductActivity::class.java).apply {
+                putExtra("shopId", item.id)           // Pass the Shop ID
+                putExtra("productId", item.id)     // Pass the Product ID (if your model has it)
+                putExtra("productName", item.name) // Pass other details if needed
+                putExtra("productPrice", item.price)
+                Log.d("Item clicked","clicked")
+                // Note: Avoid passing large Base64 strings via Intent as it can crash (size limit)
+            }
+            context.startActivity(intent)
+        }
 
         // 4. Button Click Logic
         holder.btnNavigate.setOnClickListener {

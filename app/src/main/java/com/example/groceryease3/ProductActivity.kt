@@ -18,6 +18,11 @@ class ProductActivity : AppCompatActivity() {
     private lateinit var adapter: ProductAdapter
     private lateinit var categoryLayout: LinearLayout
 
+    // UI Headers
+    private lateinit var shopNameHeader: TextView
+    private lateinit var shopAddressHeader: TextView
+    private lateinit var shopImageHeader: ImageView
+
     private val fullProductList = ArrayList<Product>()
     private val filteredList = ArrayList<Product>()
 
@@ -34,33 +39,66 @@ class ProductActivity : AppCompatActivity() {
         toolbar.setNavigationOnClickListener { onBackPressed() }
 
         // 2. Initialize Views
-        val shopNameHeader = findViewById<TextView>(R.id.shopNameHeader)
-        val shopAddressHeader = findViewById<TextView>(R.id.shopAddressHeader)
-        val shopImageHeader = findViewById<ImageView>(R.id.shopImageHeader)
+        shopNameHeader = findViewById(R.id.shopNameHeader)
+        shopAddressHeader = findViewById(R.id.shopAddressHeader)
+        shopImageHeader = findViewById(R.id.shopImageHeader)
         categoryLayout = findViewById(R.id.categoryLayout)
 
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Initialize adapter with the empty filteredList
+        // 3. Get ID from Intent
+        shopId = intent.getStringExtra("shopId") ?: ""
+
+        // Pass shopId to ProductAdapter (matching the update we made to the adapter earlier)
         adapter = ProductAdapter(this, filteredList)
         recyclerView.adapter = adapter
 
-        // 3. Get Data from Intent
-        val shopName = intent.getStringExtra("shopName") ?: "Products"
-        val shopAddress = intent.getStringExtra("shopAddress") ?: ""
-        val shopImageBase64 = intent.getStringExtra("shopImage") ?: "" // This is the Base64 string
-        shopId = intent.getStringExtra("shopId").toString()
+        // 4. Check if we have data or need to fetch from Firebase
+        val shopName = intent.getStringExtra("shopName") ?: ""
 
-        // 4. Update UI Text
-        supportActionBar?.title = "Store Products"
-        shopNameHeader.text = shopName
-        shopAddressHeader.text = shopAddress
+        if (shopName.isEmpty()) {
+            // Fetch Shop Details from Firebase "Users" node
+            fetchShopDetails()
+        } else {
+            // Use existing Intent data
+            updateShopUI(
+                shopName,
+                intent.getStringExtra("shopAddress") ?: "",
+                intent.getStringExtra("shopImage") ?: ""
+            )
+        }
 
-        // 5. Decode and Load Shop Header Image (Base64)
-        if (!shopImageBase64.isNullOrBlank()) {
+        fetchProducts()
+    }
+
+    private fun fetchShopDetails() {
+        val db = FirebaseDatabase.getInstance().reference.child("Users").child(shopId)
+        db.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    val name = snapshot.child("shopName").value?.toString() ?: "Store"
+                    val address = snapshot.child("address").value?.toString() ?: ""
+                    val image = snapshot.child("image").value?.toString() ?: ""
+
+                    updateShopUI(name, address, image)
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("PRODUCT_ACT", "Failed to fetch shop details: ${error.message}")
+            }
+        })
+    }
+
+    private fun updateShopUI(name: String, address: String, imageBase64: String) {
+        supportActionBar?.title = name
+        shopNameHeader.text = name
+        shopAddressHeader.text = address
+
+        if (!imageBase64.isNullOrBlank()) {
             try {
-                val cleanBase64 = shopImageBase64
+                val cleanBase64 = imageBase64
                     .substringAfter("base64,")
                     .replace("\\s".toRegex(), "")
                     .trim()
@@ -77,12 +115,11 @@ class ProductActivity : AppCompatActivity() {
                 Log.e("PRODUCT_ACT_ERROR", "Header image decode failed: ${e.message}")
             }
         }
-
-        fetchProducts()
     }
 
     private fun fetchProducts() {
         val database = FirebaseDatabase.getInstance().reference
+        // Listening to "products" node
         database.child("products").addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 fullProductList.clear()
@@ -91,7 +128,7 @@ class ProductActivity : AppCompatActivity() {
 
                 for (snap in snapshot.children) {
                     val product = snap.getValue(Product::class.java)
-                    // Check if product's ID field matches this shop's ID
+                    // Note: Ensure your Product model has an 'id' or 'shopId' field that matches this.shopId
                     if (product != null && product.id == shopId) {
                         fullProductList.add(product)
                         if (!product.category.isNullOrEmpty()) {
@@ -132,8 +169,6 @@ class ProductActivity : AppCompatActivity() {
         } else {
             fullProductList.filter { it.category == category }
         }
-
-        // Use the updateList method from your Adapter
         adapter.updateList(result)
     }
 }
