@@ -3,6 +3,8 @@
 
     <!-- ✅ Permissions (only once) -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.INTERNET"/>
 
@@ -14,8 +16,9 @@
 
         <!-- 🚀 Launcher -->
         <activity
-            android:name=".Splash"
-            android:exported="true">
+            android:name=".RegisterActivity"
+            android:exported="true"
+            android:theme="@style/Theme.GroceryEase3">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -25,7 +28,7 @@
         <!-- Other Activities -->
         <activity android:name=".MainActivity" android:exported="true"/>
         <activity android:name=".BottomNavigationActivity" android:exported="true"/>
-        <activity android:name=".RegisterActivity" android:exported="true"/>
+        <activity android:name=".Splash" android:exported="true"/>
         <activity android:name=".ProductActivity" android:exported="true"/>
         <activity android:name=".HelpCenterActivity" android:exported="true"/>
         <activity android:name=".AddressActivity" android:exported="true"/>

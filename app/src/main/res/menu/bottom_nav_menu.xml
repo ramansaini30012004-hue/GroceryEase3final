@@ -5,16 +5,19 @@
     <item
         android:id="@+id/navigation_home"
         android:title="Home"
+     android:color="@android:color/holo_green_dark"
         android:icon="@drawable/home_24" />
 
     <item
         android:id="@+id/navigation_stores"
         android:title="Stores"
+        android:color="@android:color/holo_green_dark"
         android:icon="@drawable/stores_24" />
 
     <item
         android:id="@+id/navigation_profile"
         android:title="Profile"
+        android:color="@android:color/holo_green_dark"
         android:icon="@drawable/profile_24" />
 
 </menu>

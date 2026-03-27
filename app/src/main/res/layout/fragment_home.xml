@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:background="#FFFFFF">
+    android:background="@color/white">
 
     <LinearLayout
         android:orientation="vertical"
@@ -60,7 +60,9 @@
             android:layout_marginTop="12dp"
             android:gravity="center_vertical">
 
+            <!-- 🔍 EditText -->
             <EditText
+                android:id="@+id/etSearch"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -69,18 +71,24 @@
                 android:textColorHint="#888"
                 android:background="@null"/>
 
+            <!-- 🔍 Search Button -->
             <ImageView
+                android:id="@+id/search_24"
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:src="@drawable/search_24"/>
 
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/camera_24"
-                android:layout_marginStart="10dp"/>
+            <!-- 📷 Camera -->
+<!--            <ImageView-->
+<!--                android:id="@+id/cameraBtn"-->
+<!--                android:layout_width="20dp"-->
+<!--                android:layout_height="20dp"-->
+<!--                android:src="@drawable/camera_24"-->
+<!--                android:layout_marginStart="10dp"/>-->
 
+            <!-- 🎤 Mic -->
             <ImageView
+                android:id="@+id/micBtn"
                 android:layout_width="22dp"
                 android:layout_height="22dp"
                 android:src="@drawable/mic_24"
@@ -91,8 +99,8 @@
         <androidx.viewpager2.widget.ViewPager2
             android:id="@+id/bannerViewPager"
             android:layout_width="match_parent"
-            android:layout_height="180dp"
-            android:layout_marginTop="15dp"/>
+            android:layout_height="230dp"
+            android:layout_marginTop="18dp"/>
 
         <!-- CATEGORY TITLE -->
         <TextView
@@ -104,7 +112,7 @@
             android:textColor="#1B5E20"
             android:layout_marginTop="15dp"/>
 
-        <!-- CATEGORY GRID (2 ROWS, 5 ITEMS EACH) -->
+        <!-- CATEGORY GRID -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/categoryRecycler"
             android:layout_width="match_parent"
@@ -122,7 +130,7 @@
             android:textColor="#1B5E20"
             android:layout_marginTop="15dp"/>
 
-        <!-- PRODUCTS LIST (VERTICAL SCROLL) -->
+        <!-- PRODUCTS LIST -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/productRecycler"
             android:layout_width="match_parent"

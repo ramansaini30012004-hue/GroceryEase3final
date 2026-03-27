@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.*
 import android.widget.EditText
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import com.example.groceryease3.databinding.FragmentProfileBinding
@@ -32,8 +33,14 @@ class ProfileFragment : Fragment() {
                     it,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
+
                 binding.imgProfile.setImageURI(it)
-                getUserPrefs().edit().putString("profile_image", it.toString()).apply()
+
+                getUserPrefs().edit()
+                    .putString("profile_image", it.toString())
+                    .apply()
+
+                Toast.makeText(requireContext(), "Profile image updated", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -57,17 +64,12 @@ class ProfileFragment : Fragment() {
             pickImage.launch(arrayOf("image/*"))
         }
 
-        // ✅ Name Edit (GREEN UI)
+        // ✅ Name Edit
         binding.txtUserName.setOnClickListener {
 
             val input = EditText(requireContext())
             input.setText(binding.txtUserName.text)
             input.hint = "Enter your name"
-
-            // ✅ STYLE
-            input.setBackgroundResource(R.drawable.edittext_filled)
-            input.setTextColor(resources.getColor(android.R.color.black))
-            input.setPadding(40, 30, 40, 30)
 
             val dialog = AlertDialog.Builder(requireContext())
                 .setTitle("Edit Name")
@@ -78,15 +80,8 @@ class ProfileFragment : Fragment() {
 
             dialog.show()
 
-            // ✅ BUTTON COLORS GREEN
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                .setTextColor(resources.getColor(android.R.color.holo_green_dark))
-
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-                .setTextColor(resources.getColor(android.R.color.holo_green_dark))
-
-            // ✅ SAVE CLICK
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+
                 val name = input.text.toString().trim()
 
                 if (name.isEmpty()) {
@@ -94,14 +89,30 @@ class ProfileFragment : Fragment() {
                     return@setOnClickListener
                 }
 
+                val user = FirebaseAuth.getInstance().currentUser
+                val email = user?.email ?: ""
+
+                // ✅ SAVE DATA
+                val prefs = getUserPrefs().edit()
+                prefs.putString("name", name)
+                prefs.putString("email", email)
+                prefs.apply()
+
                 binding.txtUserName.text = name
-                getUserPrefs().edit().putString("user_name", name).apply()
+
+                // 🔥 IMPORTANT: Notify HomeFragment
+                requireActivity().supportFragmentManager.setFragmentResult(
+                    "profile_updated",
+                    Bundle()
+                )
+
+                Toast.makeText(requireContext(), "Name updated", Toast.LENGTH_SHORT).show()
 
                 dialog.dismiss()
             }
         }
 
-        // ✅ CLICK LISTENERS
+        // ✅ Click Listeners
         binding.rowAddress.root.setOnClickListener {
             startActivity(Intent(requireContext(), AddressActivity::class.java))
         }
@@ -120,21 +131,15 @@ class ProfileFragment : Fragment() {
 
         // ✅ Logout
         binding.btnLogout.setOnClickListener {
-
-            // ✅ Firebase logout
             FirebaseAuth.getInstance().signOut()
 
-            // ✅ Register screen open
             val intent = Intent(requireContext(), RegisterActivity::class.java)
-
-            // 🔥 BACK STACK CLEAR (बहुत important)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-
             startActivity(intent)
         }
     }
 
-    // ✅ Titles fix (items issue fix)
+    // ✅ Titles
     private fun setupTitles() {
         binding.rowSavedShops.txtTitle.text = "Saved Shops"
         binding.rowAddress.txtTitle.text = "Saved Address"
@@ -147,7 +152,7 @@ class ProfileFragment : Fragment() {
     private fun loadData() {
         val prefs = getUserPrefs()
 
-        binding.txtUserName.text = prefs.getString("user_name", "Your Name")
+        binding.txtUserName.text = prefs.getString("name", "Your Name")
 
         val user = FirebaseAuth.getInstance().currentUser
         binding.txtUserEmail.text = user?.email ?: "No Email"

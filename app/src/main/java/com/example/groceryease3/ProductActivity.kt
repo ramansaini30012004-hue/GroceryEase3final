@@ -2,173 +2,157 @@ package com.example.groceryease3
 
 import android.os.Bundle
 import android.util.Base64
-import android.util.Log
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.google.android.material.button.MaterialButton
 import com.google.firebase.database.*
 
 class ProductActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: ProductAdapter
-    private lateinit var categoryLayout: LinearLayout
 
-    // UI Headers
-    private lateinit var shopNameHeader: TextView
-    private lateinit var shopAddressHeader: TextView
-    private lateinit var shopImageHeader: ImageView
+    private val productList = ArrayList<Product>()
+    private val fullList = ArrayList<Product>()
 
-    private val fullProductList = ArrayList<Product>()
-    private val filteredList = ArrayList<Product>()
+    private var selectedCategory = "ALL"
 
-    private var shopId = ""
+    private var shopLat = 0.0
+    private var shopLng = 0.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_product)
 
-        // 1. Setup Toolbar
-        val toolbar = findViewById<Toolbar>(R.id.toolbar)
-        setSupportActionBar(toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        toolbar.setNavigationOnClickListener { onBackPressed() }
+        val shopNameHeader = findViewById<TextView>(R.id.shopNameHeader)
+        val shopAddressHeader = findViewById<TextView>(R.id.shopAddressHeader)
+        val shopImageHeader = findViewById<ImageView>(R.id.shopImageHeader)
+        val categoryLayout = findViewById<LinearLayout>(R.id.categoryLayout)
 
-        // 2. Initialize Views
-        shopNameHeader = findViewById(R.id.shopNameHeader)
-        shopAddressHeader = findViewById(R.id.shopAddressHeader)
-        shopImageHeader = findViewById(R.id.shopImageHeader)
-        categoryLayout = findViewById(R.id.categoryLayout)
+        val shopName = intent.getStringExtra("shopName")
+        val shopAddress = intent.getStringExtra("shopAddress")
+        val shopImage = intent.getStringExtra("shopImage")
 
+        shopLat = intent.getDoubleExtra("shopLat", 0.0)
+        shopLng = intent.getDoubleExtra("shopLng", 0.0)
+
+        shopNameHeader.text = shopName ?: "Shop"
+        shopAddressHeader.text = shopAddress ?: ""
+
+        // IMAGE
+        if (!shopImage.isNullOrEmpty()) {
+            try {
+                val base64 = shopImage.substringAfter("base64,", shopImage)
+                val bytes = Base64.decode(base64, Base64.DEFAULT)
+
+                Glide.with(this)
+                    .load(bytes)
+                    .placeholder(R.drawable.basket)
+                    .into(shopImageHeader)
+
+            } catch (e: Exception) {
+                shopImageHeader.setImageResource(R.drawable.basket)
+            }
+        } else {
+            shopImageHeader.setImageResource(R.drawable.basket)
+        }
+
+        // RECYCLER
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // 3. Get ID from Intent
-        shopId = intent.getStringExtra("shopId") ?: ""
-
-        // Pass shopId to ProductAdapter (matching the update we made to the adapter earlier)
-        adapter = ProductAdapter(this, filteredList)
+        adapter = ProductAdapter(this, productList, shopLat, shopLng)
         recyclerView.adapter = adapter
-
-        // 4. Check if we have data or need to fetch from Firebase
-        val shopName = intent.getStringExtra("shopName") ?: ""
-
-        if (shopName.isEmpty()) {
-            // Fetch Shop Details from Firebase "Users" node
-            fetchShopDetails()
-        } else {
-            // Use existing Intent data
-            updateShopUI(
-                shopName,
-                intent.getStringExtra("shopAddress") ?: "",
-                intent.getStringExtra("shopImage") ?: ""
-            )
-        }
 
         fetchProducts()
     }
 
-    private fun fetchShopDetails() {
-        val db = FirebaseDatabase.getInstance().reference.child("Users").child(shopId)
-        db.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                if (snapshot.exists()) {
-                    val name = snapshot.child("shopName").value?.toString() ?: "Store"
-                    val address = snapshot.child("address").value?.toString() ?: ""
-                    val image = snapshot.child("image").value?.toString() ?: ""
-
-                    updateShopUI(name, address, image)
-                }
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                Log.e("PRODUCT_ACT", "Failed to fetch shop details: ${error.message}")
-            }
-        })
-    }
-
-    private fun updateShopUI(name: String, address: String, imageBase64: String) {
-        supportActionBar?.title = name
-        shopNameHeader.text = name
-        shopAddressHeader.text = address
-
-        if (!imageBase64.isNullOrBlank()) {
-            try {
-                val cleanBase64 = imageBase64
-                    .substringAfter("base64,")
-                    .replace("\\s".toRegex(), "")
-                    .trim()
-
-                val imageBytes = Base64.decode(cleanBase64, Base64.NO_WRAP)
-
-                Glide.with(this)
-                    .asBitmap()
-                    .load(imageBytes)
-                    .placeholder(android.R.drawable.ic_menu_report_image)
-                    .error(android.R.drawable.ic_menu_report_image)
-                    .into(shopImageHeader)
-            } catch (e: Exception) {
-                Log.e("PRODUCT_ACT_ERROR", "Header image decode failed: ${e.message}")
-            }
-        }
-    }
-
+    // 🔥 FETCH + DYNAMIC BUTTONS
     private fun fetchProducts() {
-        val database = FirebaseDatabase.getInstance().reference
-        // Listening to "products" node
-        database.child("products").addValueEventListener(object : ValueEventListener {
+
+        val ref = FirebaseDatabase.getInstance().getReference("products")
+
+        ref.addValueEventListener(object : ValueEventListener {
+
             override fun onDataChange(snapshot: DataSnapshot) {
-                fullProductList.clear()
-                val categories = mutableSetOf<String>()
-                categories.add("All")
+
+                fullList.clear()
+
+                val categorySet = HashSet<String>()
 
                 for (snap in snapshot.children) {
                     val product = snap.getValue(Product::class.java)
-                    // Note: Ensure your Product model has an 'id' or 'shopId' field that matches this.shopId
-                    if (product != null && product.id == shopId) {
-                        fullProductList.add(product)
-                        if (!product.category.isNullOrEmpty()) {
-                            categories.add(product.category)
+
+                    if (product != null) {
+                        fullList.add(product)
+
+                        if (product.category.isNotEmpty()) {
+                            categorySet.add(product.category.uppercase())
                         }
                     }
                 }
 
-                setupCategoryButtons(categories.toList())
-                filterProducts("All")
+                // 🔥 categories list
+                val finalCategories = ArrayList<String>()
+                finalCategories.add("ALL")
+                finalCategories.addAll(categorySet)
+
+                // 🔥 buttons create
+                val categoryLayout = findViewById<LinearLayout>(R.id.categoryLayout)
+                setupCategories(categoryLayout, finalCategories)
+
+                filterProducts()
             }
 
-            override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(this@ProductActivity, "Database Error: ${error.message}", Toast.LENGTH_SHORT).show()
-            }
+            override fun onCancelled(error: DatabaseError) {}
         })
     }
 
-    private fun setupCategoryButtons(categories: List<String>) {
-        categoryLayout.removeAllViews()
-        for (category in categories) {
-            val button = MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle)
+    // 🔥 BUTTON UI
+    private fun setupCategories(layout: LinearLayout, categories: List<String>) {
+
+        layout.removeAllViews()
+
+        for (cat in categories) {
+
+            val btn = Button(this)
+            btn.text = cat
+
+            btn.setBackgroundResource(R.drawable.button_green)
+            btn.setTextColor(resources.getColor(android.R.color.white))
+
             val params = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
-            params.setMargins(8, 0, 8, 0)
-            button.layoutParams = params
-            button.text = category
-            button.setOnClickListener { filterProducts(category) }
-            categoryLayout.addView(button)
+            params.setMargins(16, 0, 16, 0)
+            btn.layoutParams = params
+
+            btn.setOnClickListener {
+                selectedCategory = cat
+                filterProducts()
+            }
+
+            layout.addView(btn)
         }
     }
 
-    private fun filterProducts(category: String) {
-        val result = if (category == "All") {
-            fullProductList
-        } else {
-            fullProductList.filter { it.category == category }
+    // 🔥 FILTER
+    private fun filterProducts() {
+
+        productList.clear()
+
+        for (p in fullList) {
+
+            if (selectedCategory == "ALL" ||
+                p.category.equals(selectedCategory, true)
+            ) {
+                productList.add(p)
+            }
         }
-        adapter.updateList(result)
+
+        adapter.notifyDataSetChanged()
     }
 }

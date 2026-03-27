@@ -12,12 +12,13 @@ class CategoryAdapter(
     private val onClick: (Category) -> Unit
 ) : RecyclerView.Adapter<CategoryAdapter.ViewHolder>() {
 
-    private var selectedPosition = -1   // 🔥 highlight ke liye
+    // 🔥 CHANGE: position hata ke category name use karenge
+    var selectedCategory: String = "" // default first
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val img: ImageView = view.findViewById(R.id.catImg)
         val txt: TextView = view.findViewById(R.id.catName)
-        val card: View = view   // poora item
+        val card: View = view
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -35,22 +36,27 @@ class CategoryAdapter(
         holder.img.setImageResource(item.image)
         holder.txt.text = item.name
 
-        // ✅ CLICK LISTENER (DEBUG + WORKING)
+        // 🔥 CLICK
         holder.itemView.setOnClickListener {
 
-            Toast.makeText(holder.itemView.context, item.name, Toast.LENGTH_SHORT).show()
-
-            selectedPosition = position
+            selectedCategory = item.name   // 🔥 update by name
             notifyDataSetChanged()
 
-            onClick(item)  // 🔥 ye fetchProducts call karega
+            onClick(item)
         }
 
-        // ✅ SELECTED UI (green highlight)
-        if (position == selectedPosition) {
-            holder.card.setBackgroundColor(Color.parseColor("#C8E6C9"))
+        // 🎯 SELECTED UI (NAME BASED)
+        if (item.name.equals(selectedCategory, true)) {
+
+            // ✅ GREEN
+            holder.card.setBackgroundColor(Color.parseColor("#1B5E20"))
+            holder.txt.setTextColor(Color.WHITE)
+
         } else {
+
+            // ❌ NORMAL
             holder.card.setBackgroundColor(Color.WHITE)
+            holder.txt.setTextColor(Color.BLACK)
         }
     }
 }

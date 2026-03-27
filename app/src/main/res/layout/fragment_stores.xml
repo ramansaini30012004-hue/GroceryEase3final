@@ -1,39 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/white">
 
-    <!-- Background Image (Original, No Change) -->
-    <ImageView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="centerCrop"
-        android:src="@drawable/backgroundimg" />
-
-    <!-- Main Content -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Search Bar -->
+        <!-- 🔍 SEARCH BAR -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="50dp"
+            app:cardBackgroundColor="@color/white"
             app:cardCornerRadius="25dp"
-            app:cardElevation="4dp"
-            app:cardBackgroundColor="@color/white">
+            app:cardElevation="4dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:orientation="horizontal"
                 android:gravity="center_vertical"
+                android:orientation="horizontal"
                 android:paddingHorizontal="15dp">
 
+                <!-- 🔍 EDITTEXT -->
                 <EditText
                     android:id="@+id/searchEditText"
                     android:layout_width="0dp"
@@ -41,18 +35,22 @@
                     android:layout_weight="1"
                     android:background="@null"
                     android:hint="Search nearby shops..."
-                    android:textSize="14sp"
+                    android:imeOptions="actionSearch"
                     android:inputType="text"
-                    android:imeOptions="actionSearch" />
+                    android:textSize="14sp" />
 
+                <!-- 🔍 SEARCH ICON -->
                 <ImageView
+                    android:id="@+id/searchIcon"
                     android:layout_width="26dp"
                     android:layout_height="26dp"
+                    android:layout_marginEnd="10dp"
                     android:src="@android:drawable/ic_menu_search"
-                    app:tint="#2E7D32"
-                    android:layout_marginEnd="10dp" />
+                    app:tint="#2E7D32" />
 
+                <!-- 🎤 MIC ICON -->
                 <ImageView
+                    android:id="@+id/micIcon"
                     android:layout_width="26dp"
                     android:layout_height="26dp"
                     android:src="@android:drawable/ic_btn_speak_now"
@@ -60,13 +58,12 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Shop List -->
+        <!-- 🏪 SHOP LIST -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerViewShops"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            tools:listitem="@layout/item_shop" />
+            android:layout_height="match_parent"
+            android:layout_marginTop="12dp" />
 
     </LinearLayout>
 

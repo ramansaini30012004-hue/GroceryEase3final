@@ -20,13 +20,13 @@ class RegisterActivity : AppCompatActivity() {
 
         auth = FirebaseAuth.getInstance()
 
-        // ⭐ Already logged in user → Direct Home
+        // Already logged in
         if (auth.currentUser != null) {
             startActivity(Intent(this, BottomNavigationActivity::class.java))
             finish()
         }
 
-        // ⭐ SIGNUP
+        // REGISTER
         binding.btnRegister.setOnClickListener {
 
             val email = binding.emailTv.text.toString().trim()
@@ -42,37 +42,25 @@ class RegisterActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            if (password.length < 6) {
-                binding.passwordTv.error = "Password must be at least 6 characters"
-                return@setOnClickListener
-            }
-
             auth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener { task ->
+                .addOnCompleteListener {
 
-                    if (task.isSuccessful) {
+                    if (it.isSuccessful) {
 
-                        Toast.makeText(
-                            this,
-                            "Account Created Successfully",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Toast.makeText(this, "Registered", Toast.LENGTH_SHORT).show()
 
-                        startActivity(Intent(this, BottomNavigationActivity::class.java))
+                        val intent = Intent(this, BottomNavigationActivity::class.java)
+                        intent.putExtra("openProfile", true) // 🔥 IMPORTANT
+                        startActivity(intent)
                         finish()
 
                     } else {
-
-                        Toast.makeText(
-                            this,
-                            task.exception?.message,
-                            Toast.LENGTH_LONG
-                        ).show()
+                        Toast.makeText(this, it.exception?.message, Toast.LENGTH_LONG).show()
                     }
                 }
         }
 
-        // ⭐ LOGIN
+        // LOGIN
         binding.btnLogin.setOnClickListener {
 
             val email = binding.emailTv.text.toString().trim()
@@ -89,26 +77,17 @@ class RegisterActivity : AppCompatActivity() {
             }
 
             auth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener { task ->
+                .addOnCompleteListener {
 
-                    if (task.isSuccessful) {
+                    if (it.isSuccessful) {
 
-                        Toast.makeText(
-                            this,
-                            "Login Successful",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Toast.makeText(this, "Login Success", Toast.LENGTH_SHORT).show()
 
                         startActivity(Intent(this, BottomNavigationActivity::class.java))
                         finish()
 
                     } else {
-
-                        Toast.makeText(
-                            this,
-                            task.exception?.message,
-                            Toast.LENGTH_LONG
-                        ).show()
+                        Toast.makeText(this, it.exception?.message, Toast.LENGTH_LONG).show()
                     }
                 }
         }

@@ -8,7 +8,8 @@ data class Shop(
     var address: String = "",
     var distanceText: String = "",
     var latitude: Double = 0.0,
-    var longitude: Double = 0.0
+    var longitude: Double = 0.0,
+    var isFavorite: Boolean = false
 )
 data class Location(
     var lat: Double = 0.0,
