@@ -16,6 +16,13 @@ class ProductAdapter(
     private var shopLng: Double
 ) : RecyclerView.Adapter<ProductAdapter.ViewHolder>() {
 
+    // 🔥 CLICK LISTENER
+    private var onItemClick: ((Product) -> Unit)? = null
+
+    fun setOnItemClickListener(listener: (Product) -> Unit) {
+        onItemClick = listener
+    }
+
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val name: TextView = view.findViewById(R.id.productName)
         val price: TextView = view.findViewById(R.id.productPrice)
@@ -31,7 +38,7 @@ class ProductAdapter(
 
     override fun getItemCount(): Int = list.size
 
-    // 🔥 UPDATE LOCATION (NEW)
+    // 🔥 UPDATE LOCATION
     fun updateLocation(lat: Double, lng: Double) {
         this.shopLat = lat
         this.shopLng = lng
@@ -42,11 +49,11 @@ class ProductAdapter(
 
         val product = list[position]
 
-        holder.name.text = product.name ?: "No Name"
-        holder.price.text = "₹${product.price ?: "0"}"
+        holder.name.text = product.name.ifEmpty { "No Name" }
+        holder.price.text = "₹${product.price.ifEmpty { "0" }}"
 
         // ✅ IMAGE
-        if (!product.image.isNullOrEmpty()) {
+        if (product.image.isNotEmpty()) {
             try {
                 val base64 = product.image.substringAfter("base64,", product.image)
                 val bytes = Base64.decode(base64, Base64.DEFAULT)
@@ -63,7 +70,12 @@ class ProductAdapter(
             holder.image.setImageResource(R.drawable.bg_circle)
         }
 
-        // ✅ NAVIGATION
+        // 🔥 ITEM CLICK (IMPORTANT)
+        holder.itemView.setOnClickListener {
+            onItemClick?.invoke(product)
+        }
+
+        // ✅ NAVIGATION BUTTON
         holder.btnNavigate.setOnClickListener {
 
             if (shopLat != 0.0 && shopLng != 0.0) {
@@ -84,3 +96,4 @@ class ProductAdapter(
         }
     }
 }
+

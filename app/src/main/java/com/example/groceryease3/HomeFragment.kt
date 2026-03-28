@@ -7,7 +7,6 @@ import android.content.SharedPreferences
 import android.os.*
 import android.speech.RecognizerIntent
 import android.text.*
-import android.util.Log
 import android.view.*
 import android.widget.*
 import androidx.fragment.app.Fragment
@@ -35,8 +34,6 @@ class HomeFragment : Fragment() {
     private val productList = ArrayList<Product>()
     private val allProducts = ArrayList<Product>()
 
-    private var selectedCategory = ""
-
     private val handler = Handler(Looper.getMainLooper())
     private var currentPage = 0
 
@@ -45,7 +42,11 @@ class HomeFragment : Fragment() {
         R.drawable.banner2
     )
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
 
         val view = inflater.inflate(R.layout.fragment_home, container, false)
 
@@ -79,39 +80,94 @@ class HomeFragment : Fragment() {
         return requireActivity().getSharedPreferences("UserPrefs_$uid", Context.MODE_PRIVATE)
     }
 
-    // 🔥 PRODUCTS FIXED
+    // 🔥 PRODUCT SETUP
     private fun setupProducts() {
 
         productRecycler.layoutManager = LinearLayoutManager(requireContext())
         productRecycler.setHasFixedSize(true)
 
-        // ✅ INIT FIRST (CRASH FIX)
         productAdapter = ProductAdapter(requireContext(), productList, 0.0, 0.0)
         productRecycler.adapter = productAdapter
 
-        val db = FirebaseDatabase.getInstance().reference
+        productAdapter.setOnItemClickListener { product ->
 
-        db.child("Users").addListenerForSingleValueEvent(object : ValueEventListener {
+            val productId = product.id
 
-            override fun onDataChange(snapshot: DataSnapshot) {
-
-                var lat = 0.0
-                var lng = 0.0
-
-                for (shopSnap in snapshot.children) {
-                    lat = shopSnap.child("latitude").getValue(Double::class.java) ?: 0.0
-                    lng = shopSnap.child("longitude").getValue(Double::class.java) ?: 0.0
-                    if (lat != 0.0 && lng != 0.0) break
-                }
-
-                productAdapter.updateLocation(lat, lng)
+            if (productId.isEmpty()) {
+                Toast.makeText(requireContext(), "Invalid product", Toast.LENGTH_SHORT).show()
+                return@setOnItemClickListener
             }
 
-            override fun onCancelled(error: DatabaseError) {}
-        })
+            // 🔥 MATCH SHOP FROM USERS
+            FirebaseDatabase.getInstance().getReference("Users")
+                .addListenerForSingleValueEvent(object : ValueEventListener {
+
+                    override fun onDataChange(snapshot: DataSnapshot) {
+
+                        for (userSnap in snapshot.children) {
+
+                            val shopId = userSnap.key ?: continue
+
+                            // 🔥 MATCH CONDITION
+                            if (shopId == productId) {
+
+                                val shopName = userSnap.child("shopName").getValue(String::class.java)
+                                val address = userSnap.child("address").getValue(String::class.java)
+                                val lat = userSnap.child("latitude").getValue(Double::class.java) ?: 0.0
+                                val lng = userSnap.child("longitude").getValue(Double::class.java) ?: 0.0
+                                val image = userSnap.child("image").getValue(String::class.java)
+
+                                val intent = Intent(requireContext(), ProductActivity::class.java)
+
+                                intent.putExtra("shopId", shopId)
+                                intent.putExtra("shopName", shopName)
+                                intent.putExtra("shopAddress", address)
+                                intent.putExtra("shopLat", lat)
+                                intent.putExtra("shopLng", lng)
+                                intent.putExtra("shopImage", image)
+
+                                startActivity(intent)
+                                return
+                            }
+                        }
+
+                        Toast.makeText(requireContext(), "Shop not found", Toast.LENGTH_SHORT).show()
+                    }
+
+                    override fun onCancelled(error: DatabaseError) {}
+                })
+        }
     }
 
-    // 🔍 SEARCH FIXED
+    // 🔥 LOAD PRODUCTS
+    private fun loadAllProducts() {
+
+        FirebaseDatabase.getInstance().getReference("products")
+            .addValueEventListener(object : ValueEventListener {
+
+                override fun onDataChange(snapshot: DataSnapshot) {
+
+                    allProducts.clear()
+
+                    for (snap in snapshot.children) {
+                        val product = snap.getValue(Product::class.java)
+
+                        if (product != null) {
+                            product.id = snap.key ?: ""   // 🔥 IMPORTANT
+                            allProducts.add(product)
+                        }
+                    }
+
+                    productList.clear()
+                    productList.addAll(allProducts)
+                    productAdapter.notifyDataSetChanged()
+                }
+
+                override fun onCancelled(error: DatabaseError) {}
+            })
+    }
+
+    // 🔍 SEARCH
     private fun setupSearch() {
 
         etSearch.addTextChangedListener(object : TextWatcher {
@@ -137,49 +193,19 @@ class HomeFragment : Fragment() {
 
         if (query.isEmpty()) {
             productList.clear()
-            if (::productAdapter.isInitialized) productAdapter.notifyDataSetChanged()
+            productList.addAll(allProducts)
+            productAdapter.notifyDataSetChanged()
             return
         }
 
-        val filtered = ArrayList<Product>()
-
-        for (item in allProducts) {
-            if (
-                item.name.lowercase().contains(query.lowercase()) ||
-                item.category.lowercase().contains(query.lowercase())
-            ) {
-                filtered.add(item)
-            }
+        val filtered = allProducts.filter {
+            (it.name?.lowercase() ?: "").contains(query.lowercase()) ||
+                    (it.category?.lowercase() ?: "").contains(query.lowercase())
         }
 
         productList.clear()
         productList.addAll(filtered)
-
-        if (::productAdapter.isInitialized) productAdapter.notifyDataSetChanged()
-    }
-
-    // 🔥 LOAD PRODUCTS
-    private fun loadAllProducts() {
-
-        val db = FirebaseDatabase.getInstance().reference
-
-        db.child("products")
-            .addListenerForSingleValueEvent(object : ValueEventListener {
-
-                override fun onDataChange(snapshot: DataSnapshot) {
-
-                    allProducts.clear()
-
-                    for (snap in snapshot.children) {
-                        val product = snap.getValue(Product::class.java)
-                        if (product != null) {
-                            allProducts.add(product)
-                        }
-                    }
-                }
-
-                override fun onCancelled(error: DatabaseError) {}
-            })
+        productAdapter.notifyDataSetChanged()
     }
 
     // 🔥 CATEGORY
@@ -208,27 +234,13 @@ class HomeFragment : Fragment() {
 
     private fun fetchProducts(categoryName: String) {
 
-        val db = FirebaseDatabase.getInstance().reference
+        val filtered = allProducts.filter {
+            it.category.equals(categoryName, true)
+        }
 
-        db.child("products")
-            .addListenerForSingleValueEvent(object : ValueEventListener {
-
-                override fun onDataChange(snapshot: DataSnapshot) {
-
-                    productList.clear()
-
-                    for (snap in snapshot.children) {
-                        val product = snap.getValue(Product::class.java)
-                        if (product != null && product.category.equals(categoryName, true)) {
-                            productList.add(product)
-                        }
-                    }
-
-                    if (::productAdapter.isInitialized) productAdapter.notifyDataSetChanged()
-                }
-
-                override fun onCancelled(error: DatabaseError) {}
-            })
+        productList.clear()
+        productList.addAll(filtered)
+        productAdapter.notifyDataSetChanged()
     }
 
     // 🎤 VOICE
@@ -245,6 +257,7 @@ class HomeFragment : Fragment() {
 
     // 🔥 BANNER
     private fun setupBanner() {
+
         viewPager.adapter = BannerAdapter(bannerList)
 
         val runnable = object : Runnable {
@@ -254,6 +267,7 @@ class HomeFragment : Fragment() {
                 handler.postDelayed(this, 3000)
             }
         }
+
         handler.postDelayed(runnable, 3000)
     }
 
@@ -262,3 +276,4 @@ class HomeFragment : Fragment() {
         handler.removeCallbacksAndMessages(null)
     }
 }
+

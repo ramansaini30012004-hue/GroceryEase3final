@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-
+    android:orientation="vertical"
     android:layout_margin="6dp">
 
+    <!-- 🔥 SHOP HEADER -->
 
 
-    <!-- CardView (UPPER LAYER) -->
+    <!-- 🔥 PRODUCT CARD -->
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
         app:cardCornerRadius="12dp"
-        app:cardElevation="6dp"
-        app:cardBackgroundColor="@android:color/white">
+        app:cardElevation="5dp"
+        xmlns:app="http://schemas.android.com/apk/res-auto">
 
-        <!-- YOUR SAME CONTENT -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -25,40 +25,38 @@
             android:padding="12dp"
             android:gravity="center_vertical">
 
-            <de.hdodenhof.circleimageview.CircleImageView
+            <ImageView
                 android:id="@+id/productImage"
-                android:layout_width="90dp"
-                android:layout_height="90dp"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
                 android:layout_marginEnd="12dp"
-
-                app:civ_border_width="2dp"
-                app:civ_border_color="#2E7D32"/>
-
+                android:scaleType="centerCrop"
+                android:background="@drawable/bg_circle"
+                android:clipToOutline="true"
+                android:src="@drawable/basket"/>
 
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:orientation="vertical"
-                android:paddingStart="12dp">
+                android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/productName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Product Name"
-                    android:textSize="16sp"
+                    android:text="Product"
                     android:textStyle="bold"
-                    android:textColor="#1B5E20"/>
+                    android:textSize="16sp"
+                    android:textColor="#000"/>
 
                 <TextView
                     android:id="@+id/productPrice"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="₹100"
-                    android:textSize="14sp"
                     android:textColor="#4CAF50"
-                    android:layout_marginTop="2dp"/>
+                    android:layout_marginTop="4dp"/>
             </LinearLayout>
 
             <Button
@@ -74,4 +72,4 @@
 
     </androidx.cardview.widget.CardView>
 
-</FrameLayout>
+</LinearLayout>

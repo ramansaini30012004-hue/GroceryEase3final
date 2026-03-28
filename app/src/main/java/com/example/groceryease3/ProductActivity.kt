@@ -21,6 +21,7 @@ class ProductActivity : AppCompatActivity() {
 
     private var shopLat = 0.0
     private var shopLng = 0.0
+    private var shopId: String? = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,8 +30,8 @@ class ProductActivity : AppCompatActivity() {
         val shopNameHeader = findViewById<TextView>(R.id.shopNameHeader)
         val shopAddressHeader = findViewById<TextView>(R.id.shopAddressHeader)
         val shopImageHeader = findViewById<ImageView>(R.id.shopImageHeader)
-        val categoryLayout = findViewById<LinearLayout>(R.id.categoryLayout)
 
+        shopId = intent.getStringExtra("shopId")
         val shopName = intent.getStringExtra("shopName")
         val shopAddress = intent.getStringExtra("shopAddress")
         val shopImage = intent.getStringExtra("shopImage")
@@ -41,7 +42,7 @@ class ProductActivity : AppCompatActivity() {
         shopNameHeader.text = shopName ?: "Shop"
         shopAddressHeader.text = shopAddress ?: ""
 
-        // IMAGE
+        // 🔥 IMAGE LOAD
         if (!shopImage.isNullOrEmpty()) {
             try {
                 val base64 = shopImage.substringAfter("base64,", shopImage)
@@ -59,7 +60,7 @@ class ProductActivity : AppCompatActivity() {
             shopImageHeader.setImageResource(R.drawable.basket)
         }
 
-        // RECYCLER
+        // 🔥 RECYCLER
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
@@ -69,7 +70,7 @@ class ProductActivity : AppCompatActivity() {
         fetchProducts()
     }
 
-    // 🔥 FETCH + DYNAMIC BUTTONS
+    // 🔥 FETCH PRODUCTS + CATEGORY BUTTONS
     private fun fetchProducts() {
 
         val ref = FirebaseDatabase.getInstance().getReference("products")
@@ -79,14 +80,17 @@ class ProductActivity : AppCompatActivity() {
             override fun onDataChange(snapshot: DataSnapshot) {
 
                 fullList.clear()
-
                 val categorySet = HashSet<String>()
 
                 for (snap in snapshot.children) {
                     val product = snap.getValue(Product::class.java)
 
                     if (product != null) {
-                        fullList.add(product)
+
+                        // ⚠️ IMPORTANT: change if needed
+                        if (product.id == shopId) {
+                            fullList.add(product)
+                        }
 
                         if (product.category.isNotEmpty()) {
                             categorySet.add(product.category.uppercase())
@@ -94,12 +98,11 @@ class ProductActivity : AppCompatActivity() {
                     }
                 }
 
-                // 🔥 categories list
+                // 🔥 CATEGORY LIST
                 val finalCategories = ArrayList<String>()
                 finalCategories.add("ALL")
                 finalCategories.addAll(categorySet)
 
-                // 🔥 buttons create
                 val categoryLayout = findViewById<LinearLayout>(R.id.categoryLayout)
                 setupCategories(categoryLayout, finalCategories)
 
@@ -110,7 +113,7 @@ class ProductActivity : AppCompatActivity() {
         })
     }
 
-    // 🔥 BUTTON UI
+    // 🔥 CATEGORY BUTTON UI
     private fun setupCategories(layout: LinearLayout, categories: List<String>) {
 
         layout.removeAllViews()
@@ -121,7 +124,7 @@ class ProductActivity : AppCompatActivity() {
             btn.text = cat
 
             btn.setBackgroundResource(R.drawable.button_green)
-            btn.setTextColor(resources.getColor(android.R.color.white))
+            btn.setTextColor(getColor(android.R.color.white))
 
             val params = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -139,13 +142,12 @@ class ProductActivity : AppCompatActivity() {
         }
     }
 
-    // 🔥 FILTER
+    // 🔥 FILTER LOGIC
     private fun filterProducts() {
 
         productList.clear()
 
         for (p in fullList) {
-
             if (selectedCategory == "ALL" ||
                 p.category.equals(selectedCategory, true)
             ) {
