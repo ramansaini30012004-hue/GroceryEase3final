@@ -80,7 +80,7 @@ class HomeFragment : Fragment() {
         return requireActivity().getSharedPreferences("UserPrefs_$uid", Context.MODE_PRIVATE)
     }
 
-    // 🔥 PRODUCT SETUP
+    // ================= PRODUCTS =================
     private fun setupProducts() {
 
         productRecycler.layoutManager = LinearLayoutManager(requireContext())
@@ -89,57 +89,13 @@ class HomeFragment : Fragment() {
         productAdapter = ProductAdapter(requireContext(), productList, 0.0, 0.0)
         productRecycler.adapter = productAdapter
 
+        // 🔥 OPTIONAL: item click (future use)
         productAdapter.setOnItemClickListener { product ->
-
-            val productId = product.id
-
-            if (productId.isEmpty()) {
-                Toast.makeText(requireContext(), "Invalid product", Toast.LENGTH_SHORT).show()
-                return@setOnItemClickListener
-            }
-
-            // 🔥 MATCH SHOP FROM USERS
-            FirebaseDatabase.getInstance().getReference("Users")
-                .addListenerForSingleValueEvent(object : ValueEventListener {
-
-                    override fun onDataChange(snapshot: DataSnapshot) {
-
-                        for (userSnap in snapshot.children) {
-
-                            val shopId = userSnap.key ?: continue
-
-                            // 🔥 MATCH CONDITION
-                            if (shopId == productId) {
-
-                                val shopName = userSnap.child("shopName").getValue(String::class.java)
-                                val address = userSnap.child("address").getValue(String::class.java)
-                                val lat = userSnap.child("latitude").getValue(Double::class.java) ?: 0.0
-                                val lng = userSnap.child("longitude").getValue(Double::class.java) ?: 0.0
-                                val image = userSnap.child("image").getValue(String::class.java)
-
-                                val intent = Intent(requireContext(), ProductActivity::class.java)
-
-                                intent.putExtra("shopId", shopId)
-                                intent.putExtra("shopName", shopName)
-                                intent.putExtra("shopAddress", address)
-                                intent.putExtra("shopLat", lat)
-                                intent.putExtra("shopLng", lng)
-                                intent.putExtra("shopImage", image)
-
-                                startActivity(intent)
-                                return
-                            }
-                        }
-
-                        Toast.makeText(requireContext(), "Shop not found", Toast.LENGTH_SHORT).show()
-                    }
-
-                    override fun onCancelled(error: DatabaseError) {}
-                })
+            Toast.makeText(requireContext(), product.name, Toast.LENGTH_SHORT).show()
         }
     }
 
-    // 🔥 LOAD PRODUCTS
+    // ================= LOAD PRODUCTS =================
     private fun loadAllProducts() {
 
         FirebaseDatabase.getInstance().getReference("products")
@@ -152,8 +108,7 @@ class HomeFragment : Fragment() {
                     for (snap in snapshot.children) {
                         val product = snap.getValue(Product::class.java)
 
-                        if (product != null) {
-                            product.id = snap.key ?: ""   // 🔥 IMPORTANT
+                        if (product != null && !product.id.isNullOrEmpty()) {
                             allProducts.add(product)
                         }
                     }
@@ -167,7 +122,7 @@ class HomeFragment : Fragment() {
             })
     }
 
-    // 🔍 SEARCH
+    // ================= SEARCH =================
     private fun setupSearch() {
 
         etSearch.addTextChangedListener(object : TextWatcher {
@@ -208,7 +163,7 @@ class HomeFragment : Fragment() {
         productAdapter.notifyDataSetChanged()
     }
 
-    // 🔥 CATEGORY
+    // ================= CATEGORY =================
     private fun setupCategories() {
 
         val list = listOf(
@@ -243,7 +198,7 @@ class HomeFragment : Fragment() {
         productAdapter.notifyDataSetChanged()
     }
 
-    // 🎤 VOICE
+    // ================= VOICE =================
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
@@ -255,7 +210,7 @@ class HomeFragment : Fragment() {
         }
     }
 
-    // 🔥 BANNER
+    // ================= BANNER =================
     private fun setupBanner() {
 
         viewPager.adapter = BannerAdapter(bannerList)
@@ -276,4 +231,3 @@ class HomeFragment : Fragment() {
         handler.removeCallbacksAndMessages(null)
     }
 }
-

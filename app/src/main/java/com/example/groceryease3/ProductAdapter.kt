@@ -8,6 +8,7 @@ import android.view.*
 import android.widget.*
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.google.firebase.database.*
 
 class ProductAdapter(
     private val context: Context,
@@ -16,7 +17,7 @@ class ProductAdapter(
     private var shopLng: Double
 ) : RecyclerView.Adapter<ProductAdapter.ViewHolder>() {
 
-    // 🔥 CLICK LISTENER
+    // 🔥 CLICK LISTENER (optional)
     private var onItemClick: ((Product) -> Unit)? = null
 
     fun setOnItemClickListener(listener: (Product) -> Unit) {
@@ -38,13 +39,6 @@ class ProductAdapter(
 
     override fun getItemCount(): Int = list.size
 
-    // 🔥 UPDATE LOCATION
-    fun updateLocation(lat: Double, lng: Double) {
-        this.shopLat = lat
-        this.shopLng = lng
-        notifyDataSetChanged()
-    }
-
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
 
         val product = list[position]
@@ -52,7 +46,7 @@ class ProductAdapter(
         holder.name.text = product.name.ifEmpty { "No Name" }
         holder.price.text = "₹${product.price.ifEmpty { "0" }}"
 
-        // ✅ IMAGE
+        // ✅ IMAGE LOAD
         if (product.image.isNotEmpty()) {
             try {
                 val base64 = product.image.substringAfter("base64,", product.image)
@@ -70,30 +64,60 @@ class ProductAdapter(
             holder.image.setImageResource(R.drawable.bg_circle)
         }
 
-        // 🔥 ITEM CLICK (IMPORTANT)
+        // 🔥 ITEM CLICK (optional)
         holder.itemView.setOnClickListener {
             onItemClick?.invoke(product)
         }
 
-        // ✅ NAVIGATION BUTTON
+        // 🚀 NAVIGATE BUTTON (FINAL LOGIC)
         holder.btnNavigate.setOnClickListener {
 
-            if (shopLat != 0.0 && shopLng != 0.0) {
+            val shopId = product.id
 
-                val uri = Uri.parse("google.navigation:q=$shopLat,$shopLng")
-                val intent = Intent(Intent.ACTION_VIEW, uri)
-                intent.setPackage("com.google.android.apps.maps")
-
-                try {
-                    context.startActivity(intent)
-                } catch (e: Exception) {
-                    Toast.makeText(context, "Google Maps not installed", Toast.LENGTH_SHORT).show()
-                }
-
-            } else {
-                Toast.makeText(context, "Location not available", Toast.LENGTH_SHORT).show()
+            if (shopId.isEmpty()) {
+                Toast.makeText(context, "Invalid shop", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
+
+            // 🔥 STEP 1: loading message
+            Toast.makeText(context, "Location finding...", Toast.LENGTH_SHORT).show()
+
+            // 🔥 STEP 2: Firebase se location fetch
+            FirebaseDatabase.getInstance().getReference("Users")
+                .child(shopId)
+                .addListenerForSingleValueEvent(object : ValueEventListener {
+
+                    override fun onDataChange(snapshot: DataSnapshot) {
+
+                        if (!snapshot.exists()) {
+                            Toast.makeText(context, "Shop not found", Toast.LENGTH_SHORT).show()
+                            return
+                        }
+
+                        val lat = snapshot.child("latitude").getValue(Double::class.java) ?: 0.0
+                        val lng = snapshot.child("longitude").getValue(Double::class.java) ?: 0.0
+
+                        if (lat != 0.0 && lng != 0.0) {
+
+                            val uri = Uri.parse("google.navigation:q=$lat,$lng")
+                            val intent = Intent(Intent.ACTION_VIEW, uri)
+                            intent.setPackage("com.google.android.apps.maps")
+
+                            try {
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Google Maps not installed", Toast.LENGTH_SHORT).show()
+                            }
+
+                        } else {
+                            Toast.makeText(context, "Location not available", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+
+                    override fun onCancelled(error: DatabaseError) {
+                        Toast.makeText(context, "Failed to fetch location", Toast.LENGTH_SHORT).show()
+                    }
+                })
         }
     }
 }
-
