@@ -26,7 +26,7 @@ class StoresFragment : Fragment(R.layout.fragment_stores) {
     private lateinit var adapter: ShopAdapter
 
     private val shopList = mutableListOf<Shop>()
-    private val allShops = mutableListOf<Shop>() // 🔥 full data
+    private val allShops = mutableListOf<Shop>()
 
     private lateinit var database: DatabaseReference
 
@@ -35,6 +35,10 @@ class StoresFragment : Fragment(R.layout.fragment_stores) {
     private lateinit var micBtn: ImageView
 
     private val SPEECH_REQUEST_CODE = 200
+
+    // ✅ USER LOCATION
+    private var userLat: Double = 0.0
+    private var userLng: Double = 0.0
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -47,21 +51,19 @@ class StoresFragment : Fragment(R.layout.fragment_stores) {
 
         database = FirebaseDatabase.getInstance().reference
 
-        // 🔍 INIT SEARCH UI
         searchEditText = view.findViewById(R.id.searchEditText)
         searchBtn = view.findViewById(R.id.searchIcon)
         micBtn = view.findViewById(R.id.micIcon)
 
         setupSearch()
 
+        // 🔥 IMPORTANT: pehle location lo
         getCurrentLocation()
-        loadShops()
     }
 
-    // 🔍 SEARCH LOGIC
+    // 🔍 SEARCH
     private fun setupSearch() {
 
-        // typing
         searchEditText.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {}
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -71,29 +73,26 @@ class StoresFragment : Fragment(R.layout.fragment_stores) {
             }
         })
 
-        // 🔍 icon click
         searchBtn.setOnClickListener {
             filterShops(searchEditText.text.toString())
         }
 
-        // 🎤 voice
         micBtn.setOnClickListener {
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
             intent.putExtra(
                 RecognizerIntent.EXTRA_LANGUAGE_MODEL,
                 RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
             )
-
             startActivityForResult(intent, SPEECH_REQUEST_CODE)
         }
     }
 
-    // 🔥 FILTER + SORT
+    // 🔥 SEARCH FILTER
     private fun filterShops(query: String) {
 
         if (query.isEmpty()) {
             shopList.clear()
-            shopList.addAll(allShops) // 🔥 show all
+            shopList.addAll(allShops)
             adapter.notifyDataSetChanged()
             return
         }
@@ -102,7 +101,6 @@ class StoresFragment : Fragment(R.layout.fragment_stores) {
             it.shopName.lowercase().contains(query.lowercase())
         }.toMutableList()
 
-        // 🔥 match first
         filtered.sortBy {
             if (it.shopName.lowercase().startsWith(query.lowercase())) 0 else 1
         }
@@ -113,6 +111,51 @@ class StoresFragment : Fragment(R.layout.fragment_stores) {
         adapter.notifyDataSetChanged()
     }
 
+    // 📍 LOCATION
+    private fun getCurrentLocation() {
+        if (ActivityCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 100)
+            return
+        }
+
+        LocationServices.getFusedLocationProviderClient(requireActivity())
+            .lastLocation.addOnSuccessListener { location ->
+                location?.let {
+                    userLat = it.latitude
+                    userLng = it.longitude
+
+                    adapter.updateLocation(userLat, userLng)
+
+                    loadShops() // 🔥 location ke baad load
+                }
+            }
+    }
+
+    // 📏 DISTANCE FUNCTION
+    private fun calculateDistance(
+        userLat: Double,
+        userLng: Double,
+        shopLat: Double,
+        shopLng: Double
+    ): Double {
+        val results = FloatArray(1)
+
+        android.location.Location.distanceBetween(
+            userLat,
+            userLng,
+            shopLat,
+            shopLng,
+            results
+        )
+
+        return results[0].toDouble() / 1000 // ✅ FIXED
+    }
+
+    // 🏪 LOAD SHOPS (WITH 5KM FILTER)
     private fun loadShops() {
         database.child("Users").addValueEventListener(object : ValueEventListener {
 
@@ -136,8 +179,13 @@ class StoresFragment : Fragment(R.layout.fragment_stores) {
                     shop.longitude = lng
                     shop.isFavorite = false
 
-                    shopList.add(shop)
-                    allShops.add(shop) // 🔥 full list
+                    // 🔥 DISTANCE FILTER
+                    val distance = calculateDistance(userLat, userLng, lat, lng)
+
+                    if (distance <= 5) {
+                        shopList.add(shop)
+                        allShops.add(shop)
+                    }
                 }
 
                 loadFavorites()
@@ -149,6 +197,7 @@ class StoresFragment : Fragment(R.layout.fragment_stores) {
         })
     }
 
+    // ❤️ FAVORITES
     private fun loadFavorites() {
 
         val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
@@ -188,23 +237,5 @@ class StoresFragment : Fragment(R.layout.fragment_stores) {
                 filterShops(text)
             }
         }
-    }
-
-    private fun getCurrentLocation() {
-        if (ActivityCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 100)
-            return
-        }
-
-        LocationServices.getFusedLocationProviderClient(requireActivity())
-            .lastLocation.addOnSuccessListener { location ->
-                location?.let {
-                    adapter.updateLocation(it.latitude, it.longitude)
-                }
-            }
     }
 }
