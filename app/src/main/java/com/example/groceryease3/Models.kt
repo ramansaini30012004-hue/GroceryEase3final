@@ -27,3 +27,8 @@ data class Product(
     var category: String = ""
 
 )
+data class Category(
+    val name: String = "",
+    val image: String = "",     // ✅ Base64 / URL
+    val imageResId: Int? = null // ✅ Default drawable
+)

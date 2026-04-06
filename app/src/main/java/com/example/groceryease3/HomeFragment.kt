@@ -33,6 +33,7 @@ class HomeFragment : Fragment() {
 
     private val productList = ArrayList<Product>()
     private val allProducts = ArrayList<Product>()
+    private val categoryList = mutableListOf<Category>()
 
     private val handler = Handler(Looper.getMainLooper())
     private var currentPage = 0
@@ -65,6 +66,7 @@ class HomeFragment : Fragment() {
         setupSearch()
 
         loadAllProducts()
+        loadFirebaseCategories()
 
         return view
     }
@@ -80,7 +82,79 @@ class HomeFragment : Fragment() {
         return requireActivity().getSharedPreferences("UserPrefs_$uid", Context.MODE_PRIVATE)
     }
 
+    // ================= CATEGORY =================
+
+    private fun setupCategories() {
+
+        addDefaultCategories()
+
+        categoryAdapter = CategoryAdapter(categoryList) {
+            fetchProducts(it.name)
+        }
+
+        // 🔥 ONLY 2 ROWS + HORIZONTAL SCROLL
+        categoryRecycler.layoutManager =
+            GridLayoutManager(requireContext(), 2, GridLayoutManager.HORIZONTAL, false)
+
+        categoryRecycler.setHasFixedSize(true)
+        categoryRecycler.isNestedScrollingEnabled = false
+
+        categoryRecycler.adapter = categoryAdapter
+    }
+
+    private fun addDefaultCategories() {
+        categoryList.clear()
+
+        categoryList.add(Category("Vegetables", imageResId = R.drawable.vegetales))
+        categoryList.add(Category("Fruits", imageResId = R.drawable.fruits))
+        categoryList.add(Category("Spices", imageResId = R.drawable.spices))
+        categoryList.add(Category("Dairy", imageResId = R.drawable.dairy))
+        categoryList.add(Category("Oils", imageResId = R.drawable.oils))
+        categoryList.add(Category("Bakery", imageResId = R.drawable.bakery))
+        categoryList.add(Category("Household", imageResId = R.drawable.household))
+        categoryList.add(Category("Pulses", imageResId = R.drawable.pulses))
+        categoryList.add(Category("Beverages", imageResId = R.drawable.beverages))
+        categoryList.add(Category("Snacks", imageResId = R.drawable.snacks))
+    }
+
+    private fun loadFirebaseCategories() {
+
+        val ref = FirebaseDatabase.getInstance().getReference("Categories")
+
+        ref.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+
+                for (snap in snapshot.children) {
+
+                    val name = snap.child("name").value?.toString() ?: ""
+                    val image = snap.child("image").value?.toString() ?: ""
+
+                    // 🔥 Duplicate avoid
+                    if (!categoryList.any { it.name.equals(name, true) }) {
+                        categoryList.add(Category(name = name, image = image))
+                    }
+                }
+
+                categoryAdapter.notifyDataSetChanged()
+            }
+
+            override fun onCancelled(error: DatabaseError) {}
+        })
+    }
+
+    private fun fetchProducts(categoryName: String) {
+
+        val filtered = allProducts.filter {
+            it.category?.trim()?.equals(categoryName.trim(), true) == true
+        }
+
+        productList.clear()
+        productList.addAll(filtered)
+        productAdapter.notifyDataSetChanged()
+    }
+
     // ================= PRODUCTS =================
+
     private fun setupProducts() {
 
         productRecycler.layoutManager = LinearLayoutManager(requireContext())
@@ -88,14 +162,8 @@ class HomeFragment : Fragment() {
 
         productAdapter = ProductAdapter(requireContext(), productList, 0.0, 0.0)
         productRecycler.adapter = productAdapter
-
-        // 🔥 OPTIONAL: item click (future use)
-        productAdapter.setOnItemClickListener { product ->
-            Toast.makeText(requireContext(), product.name, Toast.LENGTH_SHORT).show()
-        }
     }
 
-    // ================= LOAD PRODUCTS =================
     private fun loadAllProducts() {
 
         FirebaseDatabase.getInstance().getReference("products")
@@ -108,7 +176,7 @@ class HomeFragment : Fragment() {
                     for (snap in snapshot.children) {
                         val product = snap.getValue(Product::class.java)
 
-                        if (product != null && !product.id.isNullOrEmpty()) {
+                        if (product != null && product.id.isNotEmpty()) {
                             allProducts.add(product)
                         }
                     }
@@ -123,6 +191,7 @@ class HomeFragment : Fragment() {
     }
 
     // ================= SEARCH =================
+
     private fun setupSearch() {
 
         etSearch.addTextChangedListener(object : TextWatcher {
@@ -154,43 +223,8 @@ class HomeFragment : Fragment() {
         }
 
         val filtered = allProducts.filter {
-            (it.name?.lowercase() ?: "").contains(query.lowercase()) ||
-                    (it.category?.lowercase() ?: "").contains(query.lowercase())
-        }
-
-        productList.clear()
-        productList.addAll(filtered)
-        productAdapter.notifyDataSetChanged()
-    }
-
-    // ================= CATEGORY =================
-    private fun setupCategories() {
-
-        val list = listOf(
-            Category("Vegetables", R.drawable.vegetales),
-            Category("Fruits", R.drawable.fruits),
-            Category("Spices", R.drawable.spices),
-            Category("Dairy", R.drawable.dairy),
-            Category("Oils", R.drawable.oils),
-            Category("Bakery", R.drawable.bakery),
-            Category("Household", R.drawable.household),
-            Category("Pulses", R.drawable.pulses),
-            Category("Beverages", R.drawable.beverages),
-            Category("Snacks", R.drawable.snacks)
-        )
-
-        categoryAdapter = CategoryAdapter(list) {
-            fetchProducts(it.name)
-        }
-
-        categoryRecycler.layoutManager = GridLayoutManager(requireContext(), 5)
-        categoryRecycler.adapter = categoryAdapter
-    }
-
-    private fun fetchProducts(categoryName: String) {
-
-        val filtered = allProducts.filter {
-            it.category.equals(categoryName, true)
+            it.name.lowercase().contains(query.lowercase()) ||
+                    it.category.lowercase().contains(query.lowercase())
         }
 
         productList.clear()
@@ -199,6 +233,7 @@ class HomeFragment : Fragment() {
     }
 
     // ================= VOICE =================
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
@@ -211,6 +246,7 @@ class HomeFragment : Fragment() {
     }
 
     // ================= BANNER =================
+
     private fun setupBanner() {
 
         viewPager.adapter = BannerAdapter(bannerList)

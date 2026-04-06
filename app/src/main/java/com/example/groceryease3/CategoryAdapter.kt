@@ -1,19 +1,17 @@
 package com.example.groceryease3
 
-import android.graphics.Color
+import android.graphics.*
+import android.util.Base64
 import android.view.*
 import android.widget.*
 import androidx.recyclerview.widget.RecyclerView
-
-data class Category(val name: String, val image: Int)
 
 class CategoryAdapter(
     private val list: List<Category>,
     private val onClick: (Category) -> Unit
 ) : RecyclerView.Adapter<CategoryAdapter.ViewHolder>() {
 
-    // 🔥 CHANGE: position hata ke category name use karenge
-    var selectedCategory: String = "" // default first
+    var selectedCategory: String = ""
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val img: ImageView = view.findViewById(R.id.catImg)
@@ -33,28 +31,46 @@ class CategoryAdapter(
 
         val item = list[position]
 
-        holder.img.setImageResource(item.image)
         holder.txt.text = item.name
+
+        // 🔥 IMAGE LOGIC (IMPORTANT)
+        when {
+            // ✅ Base64 Image
+            item.image.isNotEmpty() -> {
+                try {
+                    val bytes = Base64.decode(item.image, Base64.DEFAULT)
+                    val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    holder.img.setImageBitmap(bitmap)
+                } catch (e: Exception) {
+                    holder.img.setImageResource(R.drawable.household)
+                }
+            }
+
+            // ✅ Drawable Image
+            item.imageResId != null -> {
+                holder.img.setImageResource(item.imageResId)
+            }
+
+            else -> {
+                holder.img.setImageResource(R.drawable.household)
+            }
+        }
 
         // 🔥 CLICK
         holder.itemView.setOnClickListener {
-
-            selectedCategory = item.name   // 🔥 update by name
+            selectedCategory = item.name
             notifyDataSetChanged()
-
             onClick(item)
         }
 
-        // 🎯 SELECTED UI (NAME BASED)
+        // 🎯 SELECTED UI
         if (item.name.equals(selectedCategory, true)) {
 
-            // ✅ GREEN
-            holder.card.setBackgroundColor(Color.parseColor("#1B5E20"))
+            holder.card.setBackgroundColor(Color.parseColor("#1B5E20")) // dark green
             holder.txt.setTextColor(Color.WHITE)
 
         } else {
 
-            // ❌ NORMAL
             holder.card.setBackgroundColor(Color.WHITE)
             holder.txt.setTextColor(Color.BLACK)
         }
