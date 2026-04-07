@@ -12,6 +12,7 @@ import android.util.Log
 import android.view.View
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -36,9 +37,13 @@ class StoresFragment : Fragment(R.layout.fragment_stores) {
 
     private val SPEECH_REQUEST_CODE = 200
 
-    // ✅ USER LOCATION
-    private var userLat: Double = 0.0
-    private var userLng: Double = 0.0
+    // 📍 LOCATION
+    private var userLat = 0.0
+    private var userLng = 0.0
+
+    private var locationEnabled = false
+    private var isLocationReady = false
+    private var isDataLoaded = false
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -57,7 +62,17 @@ class StoresFragment : Fragment(R.layout.fragment_stores) {
 
         setupSearch()
 
-        // 🔥 IMPORTANT: pehle location lo
+        // ✅ पहले ALL shops दिखाओ
+        loadAllShops()
+
+        // ✅ Toast
+        Toast.makeText(
+            context,
+            "Enable location to find shops within 5 km radius",
+            Toast.LENGTH_LONG
+        ).show()
+
+        // 📍 location
         getCurrentLocation()
     }
 
@@ -87,32 +102,30 @@ class StoresFragment : Fragment(R.layout.fragment_stores) {
         }
     }
 
-    // 🔥 SEARCH FILTER
+    // 🔎 FILTER SEARCH
     private fun filterShops(query: String) {
+
+        val baseList = if (locationEnabled) shopList else allShops
 
         if (query.isEmpty()) {
             shopList.clear()
-            shopList.addAll(allShops)
+            shopList.addAll(baseList)
             adapter.notifyDataSetChanged()
             return
         }
 
-        val filtered = allShops.filter {
+        val filtered = baseList.filter {
             it.shopName.lowercase().contains(query.lowercase())
-        }.toMutableList()
-
-        filtered.sortBy {
-            if (it.shopName.lowercase().startsWith(query.lowercase())) 0 else 1
         }
 
         shopList.clear()
         shopList.addAll(filtered)
-
         adapter.notifyDataSetChanged()
     }
 
-    // 📍 LOCATION
+    // 📍 GET LOCATION
     private fun getCurrentLocation() {
+
         if (ActivityCompat.checkSelfPermission(
                 requireContext(),
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -128,35 +141,19 @@ class StoresFragment : Fragment(R.layout.fragment_stores) {
                     userLat = it.latitude
                     userLng = it.longitude
 
-                    adapter.updateLocation(userLat, userLng)
+                    locationEnabled = true
+                    isLocationReady = true
 
-                    loadShops() // 🔥 location ke baad load
+                    if (isDataLoaded) {
+                        apply5KmFilter()
+                    }
                 }
             }
     }
 
-    // 📏 DISTANCE FUNCTION
-    private fun calculateDistance(
-        userLat: Double,
-        userLng: Double,
-        shopLat: Double,
-        shopLng: Double
-    ): Double {
-        val results = FloatArray(1)
+    // 🏪 LOAD ALL SHOPS
+    private fun loadAllShops() {
 
-        android.location.Location.distanceBetween(
-            userLat,
-            userLng,
-            shopLat,
-            shopLng,
-            results
-        )
-
-        return results[0].toDouble() / 1000 // ✅ FIXED
-    }
-
-    // 🏪 LOAD SHOPS (WITH 5KM FILTER)
-    private fun loadShops() {
         database.child("Users").addValueEventListener(object : ValueEventListener {
 
             override fun onDataChange(snapshot: DataSnapshot) {
@@ -165,6 +162,7 @@ class StoresFragment : Fragment(R.layout.fragment_stores) {
                 allShops.clear()
 
                 for (shopSnap in snapshot.children) {
+
                     val shop = Shop()
 
                     shop.id = shopSnap.key ?: ""
@@ -177,15 +175,16 @@ class StoresFragment : Fragment(R.layout.fragment_stores) {
 
                     shop.latitude = lat
                     shop.longitude = lng
-                    shop.isFavorite = false
 
-                    // 🔥 DISTANCE FILTER
-                    val distance = calculateDistance(userLat, userLng, lat, lng)
+                    shopList.add(shop)
+                    allShops.add(shop)
+                }
 
-                    if (distance <= 5) {
-                        shopList.add(shop)
-                        allShops.add(shop)
-                    }
+                isDataLoaded = true
+
+                // 👉 अगर location ready है तो filter लगाओ
+                if (isLocationReady) {
+                    apply5KmFilter()
                 }
 
                 loadFavorites()
@@ -195,6 +194,50 @@ class StoresFragment : Fragment(R.layout.fragment_stores) {
                 Log.e("StoreFragment", error.message)
             }
         })
+    }
+
+    // 🔥 APPLY 5KM FILTER
+    private fun apply5KmFilter() {
+
+        val filtered = allShops.filter {
+
+            if (it.latitude == 0.0 || it.longitude == 0.0) return@filter false
+
+            val distance = calculateDistance(userLat, userLng, it.latitude, it.longitude)
+
+            Log.d("DISTANCE", "${it.shopName} -> $distance km")
+
+            distance <= 5
+        }
+
+        Log.d("FILTER", "Total: ${filtered.size}")
+
+        shopList.clear()
+        shopList.addAll(filtered)
+
+        adapter.updateLocation(userLat, userLng)
+        adapter.notifyDataSetChanged()
+    }
+
+    // 📏 DISTANCE
+    private fun calculateDistance(
+        userLat: Double,
+        userLng: Double,
+        shopLat: Double,
+        shopLng: Double
+    ): Double {
+
+        val results = FloatArray(1)
+
+        android.location.Location.distanceBetween(
+            userLat,
+            userLng,
+            shopLat,
+            shopLng,
+            results
+        )
+
+        return results[0].toDouble() / 1000
     }
 
     // ❤️ FAVORITES
@@ -225,7 +268,7 @@ class StoresFragment : Fragment(R.layout.fragment_stores) {
             })
     }
 
-    // 🎤 VOICE RESULT
+    // 🎤 VOICE SEARCH
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
@@ -236,6 +279,20 @@ class StoresFragment : Fragment(R.layout.fragment_stores) {
                 searchEditText.setText(text)
                 filterShops(text)
             }
+        }
+    }
+
+    // 📍 PERMISSION RESULT
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        if (requestCode == 100 &&
+            grantResults.isNotEmpty() &&
+            grantResults[0] == PackageManager.PERMISSION_GRANTED
+        ) {
+            getCurrentLocation()
         }
     }
 }
