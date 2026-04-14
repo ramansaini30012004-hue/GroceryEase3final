@@ -19,7 +19,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.net.URL
 
 class ProductFragment : Fragment(R.layout.fragment_product) {
 
@@ -42,14 +41,15 @@ class ProductFragment : Fragment(R.layout.fragment_product) {
     private fun setupRecyclerView() {
         adapter = ProductsAdapter(requireContext(), productList)
 
-        // Use GridLayoutManager with 2 columns
         binding.rvProducts.layoutManager = GridLayoutManager(requireContext(), 2)
         binding.rvProducts.adapter = adapter
 
         adapter.setOnItemClickListener { product ->
             val intent = Intent(requireContext(), ProductActivity::class.java)
+
             intent.putExtra("productId", product.id)
-//            intent.putExtra("shopId", product.id ?: product.)
+            intent.putExtra("shopId", product.id)   // ✅ FINAL FIX (id = shopId)
+
             startActivity(intent)
         }
     }
@@ -57,9 +57,11 @@ class ProductFragment : Fragment(R.layout.fragment_product) {
     private fun setupSearch() {
         binding.etSearchProducts.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
             override fun onTextChanged(text: CharSequence?, start: Int, before: Int, count: Int) {
                 filter(text.toString())
             }
+
             override fun afterTextChanged(s: Editable?) {}
         })
     }
@@ -72,12 +74,13 @@ class ProductFragment : Fragment(R.layout.fragment_product) {
                     for (snap in snapshot.children) {
                         val product = snap.getValue(Product::class.java)
                         product?.let {
-                            if (it.id == null) it.id = snap.key.toString()
+                            if (it.id.isEmpty()) it.id = snap.key.toString()
                             fullList.add(it)
                         }
                     }
                     filter(binding.etSearchProducts.text.toString())
                 }
+
                 override fun onCancelled(error: DatabaseError) {}
             })
     }
@@ -85,12 +88,15 @@ class ProductFragment : Fragment(R.layout.fragment_product) {
     private fun filter(query: String) {
         productList.clear()
         val lowerQuery = query.lowercase()
+
         for (item in fullList) {
-            if ((item.name?.lowercase()?.contains(lowerQuery) == true) ||
-                (item.category?.lowercase()?.contains(lowerQuery) == true)) {
+            if ((item.name.lowercase().contains(lowerQuery)) ||
+                (item.category.lowercase().contains(lowerQuery))
+            ) {
                 productList.add(item)
             }
         }
+
         adapter.notifyDataSetChanged()
     }
 
@@ -111,14 +117,14 @@ class ProductsAdapter(
         onItemClickListener = listener
     }
 
-    class ViewHolder(val binding: ItemProductsBinding) : RecyclerView.ViewHolder(binding.root)
+    class ViewHolder(val binding: ItemProductsBinding) :
+        RecyclerView.ViewHolder(binding.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val binding = ItemProductsBinding.inflate(LayoutInflater.from(context), parent, false)
+        val binding =
+            ItemProductsBinding.inflate(LayoutInflater.from(context), parent, false)
         return ViewHolder(binding)
     }
-
-
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val product = productList[position]
@@ -127,30 +133,32 @@ class ProductsAdapter(
         holder.binding.tvProductPrice.text = "₹${product.price}"
         holder.binding.tvProductQuantity.text = "${product.qty} ${product.unit}"
 
-        // Reset image to default before loading
         holder.binding.ivProductImage.setImageResource(R.drawable.basket)
 
-        // Native Async Image Loading
-        // Inside onBindViewHolder
-        if (!product.image.isNullOrEmpty()) {
+        if (product.image.isNotEmpty()) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    // STEP 1: Handle potential Base64 headers
-                    val pureBase64 = if (product.image!!.contains(",")) {
-                        product.image!!.substringAfter(",")
+                    val pureBase64 = if (product.image.contains(",")) {
+                        product.image.substringAfter(",")
                     } else {
-                        product.image!!
+                        product.image
                     }
 
-                    // STEP 2: Decode the string into bytes
-                    val imageBytes = android.util.Base64.decode(pureBase64, android.util.Base64.DEFAULT)
+                    val imageBytes = android.util.Base64.decode(
+                        pureBase64,
+                        android.util.Base64.DEFAULT
+                    )
 
-                    // STEP 3: Convert bytes to a Bitmap
-                    val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+                    val bitmap = BitmapFactory.decodeByteArray(
+                        imageBytes,
+                        0,
+                        imageBytes.size
+                    )
 
                     withContext(Dispatchers.Main) {
                         holder.binding.ivProductImage.setImageBitmap(bitmap)
                     }
+
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }

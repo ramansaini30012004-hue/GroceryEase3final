@@ -17,7 +17,6 @@ class ProductAdapter(
     private var shopLng: Double
 ) : RecyclerView.Adapter<ProductAdapter.ViewHolder>() {
 
-    // 🔥 CLICK LISTENER (optional)
     private var onItemClick: ((Product) -> Unit)? = null
 
     fun setOnItemClickListener(listener: (Product) -> Unit) {
@@ -47,25 +46,21 @@ class ProductAdapter(
         holder.price.text = "₹${product.price.ifEmpty { "0" }}"
 
         // ✅ IMAGE LOAD
-        // inside onBindViewHolder
         if (product.image.isNotEmpty()) {
             try {
-                // 1. Remove any web-prefixes if they exist
                 val cleanBase64 = if (product.image.contains(",")) {
                     product.image.substringAfter(",")
                 } else {
                     product.image
                 }
 
-                // 2. Convert the string to a byte array
                 val imageBytes = Base64.decode(cleanBase64, Base64.DEFAULT)
 
-                // 3. Load the bytes into the view
                 Glide.with(context)
-                    .asBitmap() // Explicitly tell Glide to treat this as a bitmap
+                    .asBitmap()
                     .load(imageBytes)
                     .placeholder(R.drawable.bg_circle)
-                    .error(R.drawable.bg_circle) // Show placeholder if it fails
+                    .error(R.drawable.bg_circle)
                     .into(holder.image)
 
             } catch (e: Exception) {
@@ -75,25 +70,23 @@ class ProductAdapter(
             holder.image.setImageResource(R.drawable.bg_circle)
         }
 
-        // 🔥 ITEM CLICK (optional)
+        // 🔥 ITEM CLICK
         holder.itemView.setOnClickListener {
             onItemClick?.invoke(product)
         }
 
-        // 🚀 NAVIGATE BUTTON (FINAL LOGIC)
+        // 🚀 NAVIGATE BUTTON (FINAL FIXED)
         holder.btnNavigate.setOnClickListener {
 
-            val shopId = product.id
+            val shopId = product.shopId   // ✅ FIXED HERE
 
             if (shopId.isEmpty()) {
                 Toast.makeText(context, "Invalid shop", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            // 🔥 STEP 1: loading message
             Toast.makeText(context, "Location finding...", Toast.LENGTH_SHORT).show()
 
-            // 🔥 STEP 2: Firebase se location fetch
             FirebaseDatabase.getInstance().getReference("Users")
                 .child(shopId)
                 .addListenerForSingleValueEvent(object : ValueEventListener {

@@ -15,14 +15,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import com.example.groceryease3.databinding.FragmentProfileBinding
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.*
 
 class ProfileFragment : Fragment() {
 
     private var _binding: FragmentProfileBinding? = null
     private val binding get() = _binding!!
 
-    // ✅ SharedPrefs per user
+    // ✅ SharedPrefs
     private fun getUserPrefs(): SharedPreferences {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: "default"
         return requireActivity().getSharedPreferences("UserPrefs_$uid", Context.MODE_PRIVATE)
@@ -61,6 +61,7 @@ class ProfileFragment : Fragment() {
 
         loadData()
         setupTitles()
+
         binding.rowAddress.root.visibility = View.GONE
         binding.rowNotifications.root.visibility = View.GONE
 
@@ -95,22 +96,28 @@ class ProfileFragment : Fragment() {
                 }
 
                 val user = FirebaseAuth.getInstance().currentUser
-                val email = user?.email ?: ""
+                val uid = user?.uid ?: return@setOnClickListener
+                val email = user.email ?: ""
 
-                // ✅ SAVE DATA
-                val prefs = getUserPrefs().edit()
-                prefs.putString("name", name)
-                prefs.putString("email", email)
-                prefs.apply()
-
-
-                binding.txtUserName.text = name
-
-                // 🔥 IMPORTANT: Notify HomeFragment
-                requireActivity().supportFragmentManager.setFragmentResult(
-                    "profile_updated",
-                    Bundle()
+                // ✅ SAVE TO FIREBASE
+                val userMap = mapOf(
+                    "name" to name,
+                    "email" to email
                 )
+
+                FirebaseDatabase.getInstance()
+                    .getReference("Users_data")
+                    .child(uid)
+                    .updateChildren(userMap)
+
+                // ✅ SAVE TO SHAREDPREFS
+                getUserPrefs().edit()
+                    .putString("name", name)
+                    .putString("email", email)
+                    .apply()
+
+                // ✅ UI UPDATE
+                binding.txtUserName.text = name
 
                 Toast.makeText(requireContext(), "Name updated", Toast.LENGTH_SHORT).show()
 
@@ -154,44 +161,51 @@ class ProfileFragment : Fragment() {
         binding.rowAbout.txtTitle.text = "About"
     }
 
-    // ✅ Load Data
+    // ✅ LOAD DATA (REAL-TIME)
     private fun loadData() {
-        val user = FirebaseAuth.getInstance().currentUser
-        val uid = user?.uid ?: return // Exit if no user is logged in
 
-        // 1. Set the email immediately from Auth
+        val user = FirebaseAuth.getInstance().currentUser
+        val uid = user?.uid ?: return
+
         binding.txtUserEmail.text = user.email ?: "No Email"
 
-        // 2. Get reference to the specific user's data
-        val databaseRef = FirebaseDatabase.getInstance().getReference("Users_data").child(uid)
+        val databaseRef = FirebaseDatabase.getInstance()
+            .getReference("Users_data")
+            .child(uid)
 
-        // 3. Listen for data once
-        databaseRef.get().addOnSuccessListener { snapshot ->
-            if (snapshot.exists()) {
-                val name = snapshot.child("name").value.toString()
-                val base64Image = snapshot.child("imageUrl").value.toString()
+        databaseRef.addValueEventListener(object : ValueEventListener {
 
-                // Update UI
-                binding.txtUserName.text = name
+            override fun onDataChange(snapshot: DataSnapshot) {
 
-                if (base64Image.isNotEmpty()) {
-                    val bitmap = decodeBase64(base64Image)
-                    binding.imgProfile.setImageBitmap(bitmap)
+                if (snapshot.exists()) {
+
+                    val name = snapshot.child("name").value?.toString() ?: "User"
+                    val base64Image = snapshot.child("imageUrl").value?.toString() ?: ""
+
+                    binding.txtUserName.text = name
+
+                    if (base64Image.isNotEmpty()) {
+                        val bitmap = decodeBase64(base64Image)
+                        binding.imgProfile.setImageBitmap(bitmap)
+                    }
                 }
             }
-        }.addOnFailureListener {
-            Toast.makeText(requireContext(), "Failed to load profile", Toast.LENGTH_SHORT).show()
-        }
+
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(requireContext(), "Failed to load profile", Toast.LENGTH_SHORT).show()
+            }
+        })
     }
 
     private fun decodeBase64(base64String: String): Bitmap? {
         return try {
-            val decodedBytes = android.util.Base64.decode(base64String, android.util.Base64.DEFAULT)
-            BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
+            val bytes = android.util.Base64.decode(base64String, android.util.Base64.DEFAULT)
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
         } catch (e: Exception) {
             null
         }
     }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null

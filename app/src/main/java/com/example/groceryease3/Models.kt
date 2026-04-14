@@ -24,6 +24,7 @@ data class Product(
     var unit:String="",
     var price:String="",
     var image:String="",
+    var shopId: String = "",
     var category: String = ""
 )
 

@@ -27,7 +27,7 @@ class HelpCenterActivity : AppCompatActivity() {
 
         // 1. WhatsApp Logic
         cardWhatsApp.setOnClickListener {
-            val phoneNumber = "918728957154" // Aapka number
+            val phoneNumber = "918728957155" // Aapka number
             val message = "Hello GroceryEase Support, I need help."
             val url = "https://api.whatsapp.com/send?phone=$phoneNumber&text=${Uri.encode(message)}"
             try {
@@ -41,14 +41,14 @@ class HelpCenterActivity : AppCompatActivity() {
         // 2. Call Logic
         cardCall.setOnClickListener {
             val intent = Intent(Intent.ACTION_DIAL)
-            intent.data = Uri.parse("tel:8728957154")
+            intent.data = Uri.parse("tel:8728957155")
             startActivity(intent)
         }
 
         // 3. Email Logic (Isse mail khulega)
         cardEmail.setOnClickListener {
             val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
-                data = Uri.parse("mailto:sainiramandeep567@gmail.com") // Aapka email jo image mein tha
+                data = Uri.parse("mailto:sainiramandeep56@gmail.com") // Aapka email jo image mein tha
                 putExtra(Intent.EXTRA_SUBJECT, "Customer Support Request")
                 putExtra(Intent.EXTRA_TEXT, "Hi Team, I need help with...")
             }
