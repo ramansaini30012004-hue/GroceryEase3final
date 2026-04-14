@@ -47,14 +47,25 @@ class ProductAdapter(
         holder.price.text = "₹${product.price.ifEmpty { "0" }}"
 
         // ✅ IMAGE LOAD
+        // inside onBindViewHolder
         if (product.image.isNotEmpty()) {
             try {
-                val base64 = product.image.substringAfter("base64,", product.image)
-                val bytes = Base64.decode(base64, Base64.DEFAULT)
+                // 1. Remove any web-prefixes if they exist
+                val cleanBase64 = if (product.image.contains(",")) {
+                    product.image.substringAfter(",")
+                } else {
+                    product.image
+                }
 
+                // 2. Convert the string to a byte array
+                val imageBytes = Base64.decode(cleanBase64, Base64.DEFAULT)
+
+                // 3. Load the bytes into the view
                 Glide.with(context)
-                    .load(bytes)
+                    .asBitmap() // Explicitly tell Glide to treat this as a bitmap
+                    .load(imageBytes)
                     .placeholder(R.drawable.bg_circle)
+                    .error(R.drawable.bg_circle) // Show placeholder if it fails
                     .into(holder.image)
 
             } catch (e: Exception) {

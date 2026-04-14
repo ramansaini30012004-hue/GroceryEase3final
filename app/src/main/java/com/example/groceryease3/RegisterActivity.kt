@@ -28,36 +28,37 @@ class RegisterActivity : AppCompatActivity() {
 
         // REGISTER
         binding.btnRegister.setOnClickListener {
-
-            val email = binding.emailTv.text.toString().trim()
-            val password = binding.passwordTv.text.toString().trim()
-
-            if (email.isEmpty()) {
-                binding.emailTv.error = "Enter Email"
-                return@setOnClickListener
-            }
-
-            if (password.isEmpty()) {
-                binding.passwordTv.error = "Enter Password"
-                return@setOnClickListener
-            }
-
-            auth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener {
-
-                    if (it.isSuccessful) {
-
-                        Toast.makeText(this, "Registered", Toast.LENGTH_SHORT).show()
-
-                        val intent = Intent(this, BottomNavigationActivity::class.java)
-                        intent.putExtra("openProfile", true) // 🔥 IMPORTANT
-                        startActivity(intent)
-                        finish()
-
-                    } else {
-                        Toast.makeText(this, it.exception?.message, Toast.LENGTH_LONG).show()
-                    }
-                }
+            startActivity(Intent(this, CreateAccountActivity::class.java))
+            finish()
+//            val email = binding.emailTv.text.toString().trim()
+//            val password = binding.passwordTv.text.toString().trim()
+//
+//            if (email.isEmpty()) {
+//                binding.emailTv.error = "Enter Email"
+//                return@setOnClickListener
+//            }
+//
+//            if (password.isEmpty()) {
+//                binding.passwordTv.error = "Enter Password"
+//                return@setOnClickListener
+//            }
+//
+//            auth.createUserWithEmailAndPassword(email, password)
+//                .addOnCompleteListener {
+//
+//                    if (it.isSuccessful) {
+//
+//                        Toast.makeText(this, "Registered", Toast.LENGTH_SHORT).show()
+//
+//                        val intent = Intent(this, BottomNavigationActivity::class.java)
+//                        intent.putExtra("openProfile", true) // 🔥 IMPORTANT
+//                        startActivity(intent)
+//                        finish()
+//
+//                    } else {
+//                        Toast.makeText(this, it.exception?.message, Toast.LENGTH_LONG).show()
+//                    }
+//                }
         }
 
         // LOGIN

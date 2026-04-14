@@ -4,6 +4,8 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.view.*
@@ -13,6 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import com.example.groceryease3.databinding.FragmentProfileBinding
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
 
 class ProfileFragment : Fragment() {
 
@@ -58,6 +61,8 @@ class ProfileFragment : Fragment() {
 
         loadData()
         setupTitles()
+        binding.rowAddress.root.visibility = View.GONE
+        binding.rowNotifications.root.visibility = View.GONE
 
         // ✅ Profile Image Click
         binding.imgProfile.setOnClickListener {
@@ -97,6 +102,7 @@ class ProfileFragment : Fragment() {
                 prefs.putString("name", name)
                 prefs.putString("email", email)
                 prefs.apply()
+
 
                 binding.txtUserName.text = name
 
@@ -150,19 +156,42 @@ class ProfileFragment : Fragment() {
 
     // ✅ Load Data
     private fun loadData() {
-        val prefs = getUserPrefs()
-
-        binding.txtUserName.text = prefs.getString("name", "Your Name")
-
         val user = FirebaseAuth.getInstance().currentUser
-        binding.txtUserEmail.text = user?.email ?: "No Email"
+        val uid = user?.uid ?: return // Exit if no user is logged in
 
-        val img = prefs.getString("profile_image", null)
-        if (!img.isNullOrEmpty()) {
-            binding.imgProfile.setImageURI(Uri.parse(img))
+        // 1. Set the email immediately from Auth
+        binding.txtUserEmail.text = user.email ?: "No Email"
+
+        // 2. Get reference to the specific user's data
+        val databaseRef = FirebaseDatabase.getInstance().getReference("Users_data").child(uid)
+
+        // 3. Listen for data once
+        databaseRef.get().addOnSuccessListener { snapshot ->
+            if (snapshot.exists()) {
+                val name = snapshot.child("name").value.toString()
+                val base64Image = snapshot.child("imageUrl").value.toString()
+
+                // Update UI
+                binding.txtUserName.text = name
+
+                if (base64Image.isNotEmpty()) {
+                    val bitmap = decodeBase64(base64Image)
+                    binding.imgProfile.setImageBitmap(bitmap)
+                }
+            }
+        }.addOnFailureListener {
+            Toast.makeText(requireContext(), "Failed to load profile", Toast.LENGTH_SHORT).show()
         }
     }
 
+    private fun decodeBase64(base64String: String): Bitmap? {
+        return try {
+            val decodedBytes = android.util.Base64.decode(base64String, android.util.Base64.DEFAULT)
+            BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
+        } catch (e: Exception) {
+            null
+        }
+    }
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null

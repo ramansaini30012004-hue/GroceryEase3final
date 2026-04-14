@@ -32,20 +32,20 @@ class BottomNavigationActivity : AppCompatActivity() {
         // 🔥 Bottom Navigation Click
         navView.setOnItemSelectedListener { item ->
 
-            // ✅ SAME PREFS AS PROFILE
-            val uid = FirebaseAuth.getInstance().currentUser?.uid ?: "default"
-            val prefs = getSharedPreferences("UserPrefs_$uid", MODE_PRIVATE)
-
-            val name = prefs.getString("name", "")
-            val email = prefs.getString("email", "")
-
-            // 🔴 Block Home & Store
-            if ((name.isNullOrEmpty() || email.isNullOrEmpty())
-                && item.itemId != R.id.navigation_profile
-            ) {
-                Toast.makeText(this, "Complete Profile First", Toast.LENGTH_SHORT).show()
-                return@setOnItemSelectedListener false
-            }
+//            // ✅ SAME PREFS AS PROFILE
+//            val uid = FirebaseAuth.getInstance().currentUser?.uid ?: "default"
+//            val prefs = getSharedPreferences("UserPrefs_$uid", MODE_PRIVATE)
+//
+//            val name = prefs.getString("name", "")
+//            val email = prefs.getString("email", "")
+//
+//            // 🔴 Block Home & Store
+//            if ((name.isNullOrEmpty() || email.isNullOrEmpty())
+//                && item.itemId != R.id.navigation_profile
+//            ) {
+//                Toast.makeText(this, "Complete Profile First", Toast.LENGTH_SHORT).show()
+//                return@setOnItemSelectedListener false
+//            }
 
             // ✅ Navigate
             navController.navigate(item.itemId)

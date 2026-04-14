@@ -25,10 +25,20 @@ data class Product(
     var price:String="",
     var image:String="",
     var category: String = ""
-
 )
+
 data class Category(
     val name: String = "",
     val image: String = "",     // ✅ Base64 / URL
     val imageResId: Int? = null // ✅ Default drawable
+
+)
+
+
+data class User(
+    val id: String,
+    val name: String,
+    var email: String,
+    var imageUrl: String,
+    var time: String,
 )
