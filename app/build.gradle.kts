@@ -9,6 +9,10 @@ android {
     namespace = "com.example.groceryease3"
     compileSdk = 36
 
+    lint {
+        baseline = file("lint-baseline.xml")
+    }
+
     defaultConfig {
         applicationId = "com.example.groceryease3"
         minSdk = 26
